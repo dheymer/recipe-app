@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { fetchRecipes, createRecipe } from './api';
+import { fetchRecipes, createRecipe, updateRecipe } from './api';
 import RecipeList from './components/RecipeList';
 import RecipeForm from './components/RecipeForm';
 
 export default function App() {
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [editingRecipe, setEditingRecipe] = useState(null);
 
   async function load() {
     try {
@@ -32,6 +33,27 @@ export default function App() {
     }
   }
 
+  function handleEdit(recipe) {
+    setEditingRecipe(recipe); // load recipe into form
+  }
+
+  async function handleSave(updated) {
+    if (updated.id) {
+      // update existing recipe
+      updateRecipe(updated);
+    } else {
+      // create new recipe
+      try {
+        const created = await createRecipe(updated);
+        setRecipes(prev => [created, ...prev]);
+      } catch (e) {
+        console.error(e);
+        alert('Error creando receta');
+      }
+    }
+    setEditingRecipe(null);
+  }
+
   return (
     <div className="container">
       <header>
@@ -40,12 +62,12 @@ export default function App() {
 
       <section className="form-section">
         <h2>Crear receta</h2>
-        <RecipeForm onCreate={handleCreate} />
+        <RecipeForm initialData={editingRecipe} onSave={handleSave}/>
       </section>
 
       <section>
         <h2>Recetas</h2>
-        {loading ? <p>Cargando...</p> : <RecipeList recipes={recipes} />}
+        {loading ? <p>Cargando...</p> : <RecipeList recipes={recipes} onEdit={handleEdit}/>}
       </section>
     </div>
   );

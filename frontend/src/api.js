@@ -15,3 +15,19 @@ export async function createRecipe(data) {
   if (!res.ok) throw new Error('Error creating recipe');
   return res.json();
 }
+
+export async function updateRecipe(recipe) {
+  const res = await fetch(`${BASE}/recipes/${recipe.id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(recipe),
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to update recipe");
+  }
+
+  return await res.json();
+}

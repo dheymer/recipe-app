@@ -35,14 +35,15 @@ router.post('/', async (req, res) => {
 });
 
 // PUT update
-router.put('/:id', async (req, res) => {
-  try {
-    const updated = await Recipe.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    if (!updated) return res.status(404).json({ error: 'Recipe not found' });
-    res.json(updated);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
+router.put("/:id", async (req, res) => {
+  const { id } = req.params;
+  const updatedRecipe = req.body;
+
+  const idx = recipes.findIndex((r) => r.id === id);
+  if (idx === -1) return res.status(404).json({ error: "Not found" });
+
+  recipes[idx] = updatedRecipe;
+  res.json(updatedRecipe);
 });
 
 // DELETE
