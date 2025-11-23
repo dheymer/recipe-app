@@ -25,13 +25,18 @@ export default function RecipeCard({ recipe, onEdit, onDelete }) {
       <div>
         <strong>Steps</strong>
         <ol>
-          {recipe.instructions && recipe.instructions.map((s, i) => <li key={i}>{s}</li>)}
+          {recipe.steps && recipe.steps.map((s, i) => <li key={i}>{s}</li>)}
         </ol>
       </div>
 
       <p className="meta">
         {recipe.servings ? `Servings: ${recipe.servings}` : ''} {recipe.prepTime ? `• Prep ${recipe.prepTime}` : ''} {recipe.cookTime ? `• Cook ${recipe.cookTime}` : ''}
         {recipe.temp ? ` • Oven ${recipe.temp}` : ''}
+      </p>
+      <p className="meta">
+        {recipe.tags && recipe.tags.map((tag, i) => (
+            <span className='tag-pill' key={i}>{tag}</span>
+        ))}
       </p>
 
       <div className="card-actions">

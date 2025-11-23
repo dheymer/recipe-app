@@ -87,3 +87,12 @@ button[type="button"] {
   margin: 10px 0;
   border: 2px solid #ddd;
 }
+
+.tag-pill {
+    font-size: small;
+    background-color: #666;
+    color: white;
+    padding: 0px 7px 3px;
+    border-radius: 10px;
+    margin: 0.5rem 0.5rem 0.5rem 0 ;
+}
