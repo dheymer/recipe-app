@@ -1,250 +1,175 @@
 'use client';
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from 'react';
+import { createRecipeOnServer, updateRecipeOnServer } from '../api';
 
-export default function RecipeForm({ initialData = null, onSave }) {
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [servings, setServings] = useState("");
-  const [prepTime, setPrepTime] = useState("");
-  const [cookTime, setCookTime] = useState("");
-  const [temp, setTemp] = useState("");
-  const [ingredients, setIngredients] = useState([
-    { name: "", amount: "", miseenplace: "" }
-  ]);
-  const [steps, setSteps] = useState([""]);
-  const [tags, setTags] = useState("");
-  const [image, setImage] = useState(null);
+export default function RecipeForm({ initialData = null, onSaved }) {
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [ingredients, setIngredients] = useState([{ name: '', amount: '', miseenplace: '' }]);
+  const [steps, setSteps] = useState(['']);
+  const [prepTime, setPrepTime] = useState('');
+  const [cookTime, setCookTime] = useState('');
+  const [temp, setTemp] = useState('');
+  const [servings, setServings] = useState(1);
+  const [tags, setTags] = useState('');
+  const [imageFile, setImageFile] = useState(null); // File
+  const [imagePreviewUrl, setImagePreviewUrl] = useState(null); // local preview
 
-  // Load initial values when editing
   useEffect(() => {
     if (initialData) {
-      setTitle(initialData.title || "");
-      setDescription(initialData.description || "");
-      setServings(initialData.servings || "");
-      setPrepTime(initialData.prepTime || "");
-      setCookTime(initialData.cookTime || "");
-      setTemp(initialData.temp || "");
-      setIngredients(initialData.ingredients || [
-        { name: "", amount: "", miseenplace: "" }
-      ]);
-      setSteps(initialData.steps || [""]);
-      setTags(initialData.tags || "");
-      setImage(initialData.image || null);
+      setTitle(initialData.title || '');
+      setDescription(initialData.description || '');
+      setIngredients(initialData.ingredients && initialData.ingredients.length ? initialData.ingredients : [{ name: '', amount: '', miseenplace: '' }]);
+      setSteps(initialData.steps && initialData.steps.length ? initialData.steps : ['']);
+      setPrepTime(initialData.prepTime || '');
+      setCookTime(initialData.cookTime || '');
+      setTemp(initialData.temp || '');
+      setServings(initialData.servings || 1);
+      setTags((initialData.tags || []).join(', '));
+      setImageFile(null);
+      setImagePreviewUrl(initialData.imageUrl ? initialData.imageUrl : null); // if editing and has image path, show it
+    } else {
+      // reset when creating new
+      setTitle('');
+      setDescription('');
+      setIngredients([{ name: '', amount: '', miseenplace: '' }]);
+      setSteps(['']);
+      setPrepTime('');
+      setCookTime('');
+      setTemp('');
+      setServings(1);
+      setTags('');
+      setImageFile(null);
+      setImagePreviewUrl(null);
     }
   }, [initialData]);
 
+  // image input change
   function handleImageChange(e) {
     const file = e.target.files[0];
     if (!file) return;
-
-    const reader = new FileReader();
-    reader.onloadend = () => setImage(reader.result);
-    reader.readAsDataURL(file);
+    setImageFile(file);
+    setImagePreviewUrl(URL.createObjectURL(file));
   }
 
-  // ------------------------
-  //   INGREDIENT HANDLERS
-  // ------------------------
+  // Ingredients handlers
   function handleIngredientChange(index, field, value) {
-    const updated = [...ingredients];
-    updated[index][field] = value;
-    setIngredients(updated);
+    const copy = [...ingredients];
+    copy[index] = { ...copy[index], [field]: value };
+    setIngredients(copy);
   }
-
-  function addIngredient() {
-    setIngredients([...ingredients, { name: "", amount: "", miseenplace: "" }]);
-  }
-
+  function addIngredient() { setIngredients([...ingredients, { name: '', amount: '', miseenplace: '' }]); }
   function removeIngredient(index) {
     const updated = ingredients.filter((_, i) => i !== index);
-    setIngredients(updated.length ? updated : [{ name: "", amount: "", miseenplace: "" }]);
+    setIngredients(updated.length ? updated : [{ name: '', amount: '', miseenplace: '' }]);
   }
 
-  // ------------------------
-  //   INSTRUCTION HANDLERS
-  // ------------------------
-  function handleStepChange(index, value) {
-    const updated = [...steps];
-    updated[index] = value;
-    setSteps(updated);
+  // Instructions handlers
+  function handleInstructionChange(index, value) {
+    const copy = [...steps];
+    copy[index] = value;
+    setSteps(copy);
   }
-
-  function addStep() {
-    setSteps([...steps, ""]);
-  }
-
-  function removeStep(index) {
+  function addInstruction() { setSteps([...steps, '']); }
+  function removeInstruction(index) {
     const updated = steps.filter((_, i) => i !== index);
-    setSteps(updated.length ? updated : [""]);
+    setSteps(updated.length ? updated : ['']);
   }
 
-  // ------------------------
-  //   SUBMIT
-  // ------------------------
-  function handleSubmit(e) {
+  // Submit
+  async function handleSubmit(e) {
     e.preventDefault();
 
-    const cleanedIngredients = ingredients.filter(
-      ing => ing.name.trim() !== "" || ing.amount.trim() !== "" || ing.miseenplace.trim() !== ""
-    );
+    const cleanedIngredients = ingredients.filter(ing => (ing.name || ing.amount || ing.miseenplace));
+    const cleanedInstructions = steps.filter(s => s && s.trim() !== '');
+    const tagsArray = tags.split(',').map(t => t.trim()).filter(Boolean);
 
-    const cleanedSteps = steps.filter(step => step.trim() !== "");
-
-    // const cleanedTags = tags.split(',');
-
-    const recipe = {
-      ...initialData,
+    const payload = {
       title,
       description,
-      servings,
+      ingredients: cleanedIngredients,
+      steps: cleanedInstructions,
       prepTime,
       cookTime,
       temp,
-      ingredients: cleanedIngredients,
-      steps: cleanedSteps,
-      tags,
-      image,
+      servings,
+      tags: tagsArray
     };
-    console.log(recipe);
 
-    onSave(recipe);
-
-    if (!initialData) {
-      setTitle("");
-      setDescription("");
-      setServings("");
-      setPrepTime("");
-      setCookTime("");
-      setTemp("");
-      setIngredients([{ name: "", amount: "", miseenplace: "" }]);
-      setSteps([""]);
-      setTags("");
-      setImage(null);
+    try {
+      let saved;
+      if (initialData && initialData._id) {
+        saved = await updateRecipeOnServer(initialData._id, payload, imageFile);
+      } else {
+        saved = await createRecipeOnServer(payload, imageFile);
+      }
+      if (onSaved) onSaved(saved);
+    } catch (err) {
+      console.error(err);
+      alert('Error saving recipe');
     }
   }
 
   return (
     <form onSubmit={handleSubmit} className="recipe-form">
-      <h2>{initialData ? "Update Recipe" : "Add a Recipe"}</h2>
+      <h2>{initialData ? 'Edit recipe' : 'Create recipe'}</h2>
 
-      {/* TITLE */}
       <label>Title</label>
-      <input
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        required
-      />
+      <input value={title} onChange={e => setTitle(e.target.value)} required />
 
-      {/* DESCRIPTION */}
       <label>Description</label>
-      <input
-        value={description}
-        onChange={(e) => setTitle(e.target.value)}
-      />
-    <label>Info</label>
-    <div className="row">
-        <input
-            placeholder="Servings"
-            value={servings}
-            onChange={(e) => setServings(e.target.value)}
-            required
-        />
-        <input
-            placeholder="Prep Time"
-            value={prepTime}
-            onChange={(e) => setPrepTime(e.target.value)}
-            required
-        />
-        <input
-            placeholder="Cook Time"
-            value={cookTime}
-            onChange={(e) => setCookTime(e.target.value)}
-            required
-        />
-        <input
-            placeholder="Oven Temp"
-            value={temp}
-            onChange={(e) => setTemp(e.target.value)}
-        />
-    </div>
+      <textarea value={description} onChange={e => setDescription(e.target.value)} />
 
-      {/* INGREDIENTS */}
       <label>Ingredients</label>
-      {ingredients.map((ing, index) => (
-        <div className="row" key={index}>
-          <input
-            placeholder="Name"
-            value={ing.name}
-            onChange={(e) =>
-              handleIngredientChange(index, "name", e.target.value)
-            }
-            required
-          />
-
-          <input
-            placeholder="Amount"
-            value={ing.amount}
-            onChange={(e) =>
-              handleIngredientChange(index, "amount", e.target.value)
-            }
-            required
-          />
-
-          <input
-            placeholder="Mise en Place"
-            value={ing.miseenplace}
-            onChange={(e) =>
-              handleIngredientChange(index, "miseenplace", e.target.value)
-            }
-          />
-
-          <button type="button" onClick={() => removeIngredient(index)}>
-            -
-          </button>
+      {ingredients.map((ing, i) => (
+        <div className="row" key={i}>
+          <input placeholder="Name" value={ing.name} onChange={e => handleIngredientChange(i, 'name', e.target.value)} />
+          <input placeholder="Amount" value={ing.amount} onChange={e => handleIngredientChange(i, 'amount', e.target.value)} />
+          <input placeholder="Mise en Place" value={ing.miseenplace} onChange={e => handleIngredientChange(i, 'miseenplace', e.target.value)} />
+          <button type="button" onClick={() => removeIngredient(i)}>-</button>
         </div>
       ))}
+      <button type="button" className="add-btn" onClick={addIngredient}>+ Add ingredient</button>
 
-      <button type="button" onClick={addIngredient} className="add-btn">
-        + Add Ingredient
-      </button>
-
-      {/* INSTRUCTIONS */}
       <label>Steps</label>
-      {steps.map((step, index) => (
-        <div className="row" key={index}>
-          <textarea
-            placeholder={`Step ${index + 1}`}
-            value={step}
-            onChange={(e) => handleStepChange(index, e.target.value)}
-            required
-          />
-
-          <button type="button" onClick={() => removeStep(index)}>
-            -
-          </button>
+      {steps.map((step, i) => (
+        <div className="row" key={i}>
+          <textarea placeholder={`Step ${i+1}`} value={step} onChange={e => handleInstructionChange(i, e.target.value)} />
+          <button type="button" onClick={() => removeInstruction(i)}>-</button>
         </div>
       ))}
+      <button type="button" className="add-btn" onClick={addInstruction}>+ Add step</button>
 
-      <button type="button" onClick={addStep} className="add-btn">
-        + Add Step
-      </button>
+      <div className="two-columns">
+        <div>
+          <label>Prep time</label>
+          <input value={prepTime} onChange={e => setPrepTime(e.target.value)} placeholder="20 min" />
+        </div>
+        <div>
+          <label>Cook time</label>
+          <input value={cookTime} onChange={e => setCookTime(e.target.value)} placeholder="40 min" />
+        </div>
+      </div>
 
-      {/* TAGS */}
-      <label>Tags</label>
-      <input
-        placeholder="Separated by commas"
-        value={tags}
-        onChange={(e) => setTags(e.target.value)}
-      />
+      <div className="two-columns">
+        <div>
+          <label>Oven temp</label>
+          <input value={temp} onChange={e => setTemp(e.target.value)} placeholder="180°C" />
+        </div>
+        <div>
+          <label>Servings</label>
+          <input type="number" min="1" value={servings} onChange={e => setServings(Number(e.target.value))} />
+        </div>
+      </div>
 
-      {/* IMAGE */}
-      <label>Dish Photo</label>
+      <label>Tags (comma separated)</label>
+      <input value={tags} onChange={e => setTags(e.target.value)} placeholder="italian, pasta" />
+
+      <label>Dish photo</label>
       <input type="file" accept="image/*" onChange={handleImageChange} />
-      {image && <img src={image} className="image-preview" />}
+      {imagePreviewUrl && <img src={imagePreviewUrl} alt="preview" className="image-preview" />}
 
-      <button type="submit">
-        {initialData ? "Update Recipe" : "Save Recipe"}
-      </button>
+      <button type="submit">{initialData ? 'Update recipe' : 'Create recipe'}</button>
     </form>
   );
 }

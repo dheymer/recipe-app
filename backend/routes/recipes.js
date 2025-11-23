@@ -1,8 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const Recipe = require('../models/Recipe');
+const path = require('path');
+const fs = require('fs');
 
-// GET all
+const Recipe = require('../models/Recipe');
+const { upload } = require('../middleware/upload');
+
+// GET all recipes
 router.get('/', async (req, res) => {
   try {
     const recipes = await Recipe.find().sort({ createdAt: -1 });
@@ -12,7 +16,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET by id
+// GET recipe by id
 router.get('/:id', async (req, res) => {
   try {
     const r = await Recipe.findById(req.params.id);
@@ -23,37 +27,104 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// POST create
-router.post('/', async (req, res) => {
+// POST create recipe (with optional image)
+router.post('/', upload.single('image'), async (req, res) => {
   try {
-    const recipe = new Recipe(req.body);
-    const saved = await recipe.save();
+    const body = req.body || {};
+
+    // Parse arrays that were sent as JSON strings
+    const ingredients = body.ingredients ? JSON.parse(body.ingredients) : [];
+    const steps = body.steps ? JSON.parse(body.steps) : [];
+
+    const recipeData = {
+      title: body.title,
+      description: body.description,
+      ingredients,
+      steps,
+      prepTime: body.prepTime,
+      cookTime: body.cookTime,
+      temp: body.temp,
+      servings: body.servings ? Number(body.servings) : undefined,
+      tags: body.tags ? JSON.parse(body.tags) : [],
+      imageUrl: req.file ? `/uploads/${req.file.filename}` : null
+    };
+
+    const newRecipe = new Recipe(recipeData);
+    const saved = await newRecipe.save();
     res.status(201).json(saved);
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ error: 'Error creating recipe' });
   }
 });
 
-// PUT update
-router.put("/:id", async (req, res) => {
-  const { id } = req.params;
-  const updatedRecipe = req.body;
+// PUT update recipe (with optional image)
+router.put('/:id', upload.single('image'), async (req, res) => {
+  try {
+    const body = req.body || {};
+    const id = req.params.id;
+    const recipe = await Recipe.findById(id);
+    if (!recipe) return res.status(404).json({ error: 'Recipe not found' });
 
-  const idx = recipes.findIndex((r) => r._id === id);
-  if (idx === -1) return res.status(404).json({ error: "Not found" });
+    // Parse arrays if provided
+    const ingredients = body.ingredients ? JSON.parse(body.ingredients) : recipe.ingredients;
+    const steps = body.steps ? JSON.parse(body.steps) : recipe.steps;
+    const tags = body.tags ? JSON.parse(body.tags) : recipe.tags;
 
-  recipes[idx] = updatedRecipe;
-  res.json(updatedRecipe);
+    const updateData = {
+      title: body.title ?? recipe.title,
+      description: body.description ?? recipe.description,
+      ingredients,
+      steps,
+      prepTime: body.prepTime ?? recipe.prepTime,
+      cookTime: body.cookTime ?? recipe.cookTime,
+      temp: body.temp ?? recipe.temp,
+      servings: body.servings ? Number(body.servings) : recipe.servings,
+      tags
+    };
+
+    // If new file is uploaded, delete old file from disk (if existed) and set new image path
+    if (req.file) {
+      if (recipe.imageUrl) {
+        const existingPath = path.join(process.cwd(), recipe.imageUrl);
+        if (fs.existsSync(existingPath)) {
+          fs.unlink(existingPath, (err) => {
+            if (err) console.warn('Failed to delete old image', err);
+          });
+        }
+      }
+      updateData.imageUrl = `/uploads/${req.file.filename}`;
+    }
+
+    const updated = await Recipe.findByIdAndUpdate(id, updateData, { new: true });
+    res.json(updated);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error updating recipe' });
+  }
 });
 
-// DELETE
+// DELETE recipe
 router.delete('/:id', async (req, res) => {
   try {
-    const removed = await Recipe.findByIdAndDelete(req.params.id);
-    if (!removed) return res.status(404).json({ error: 'Recipe not found' });
+    const id = req.params.id;
+    const recipe = await Recipe.findByIdAndDelete(id);
+    if (!recipe) return res.status(404).json({ error: 'Recipe not found' });
+
+    // delete image file if exists
+    if (recipe.imageUrl) {
+      const p = path.join(process.cwd(), recipe.imageUrl);
+      if (fs.existsSync(p)) {
+        fs.unlink(p, (err) => {
+          if (err) console.warn('Failed to delete image after deletion', err);
+        });
+      }
+    }
+
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ error: 'Error deleting recipe' });
   }
 });
 

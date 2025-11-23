@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { fetchRecipes, createRecipe, updateRecipe } from './api';
+import { fetchRecipes, createRecipeOnServer, updateRecipeOnServer } from './api';
 import RecipeList from './components/RecipeList';
 import RecipeForm from './components/RecipeForm';
 
@@ -24,16 +24,6 @@ export default function App() {
 
   useEffect(() => { load(); }, []);
 
-  async function handleCreate(recipe) {
-    try {
-      const created = await createRecipe(recipe);
-      setRecipes(prev => [created, ...prev]);
-    } catch (e) {
-      console.error(e);
-      alert('Error creando receta');
-    }
-  }
-
   function handleEdit(recipe) {
     setEditingRecipe(recipe); // load recipe into form
   }
@@ -41,11 +31,11 @@ export default function App() {
   async function handleSave(updated) {
     if (updated._id) {
       // update existing recipe
-      updateRecipe(updated);
+      updateRecipeOnServer(updated);
     } else {
       // create new recipe
       try {
-        const created = await createRecipe(updated);
+        const created = await createRecipeOnServer(updated);
         setRecipes(prev => [created, ...prev]);
       } catch (e) {
         console.error(e);
@@ -58,16 +48,15 @@ export default function App() {
   return (
     <div className="container">
       <header>
-        <h1>Recetario de Meme</h1>
+        <h1>Meme's Recipe Book</h1>
       </header>
 
       <section className="form-section">
-        <h2>Crear receta</h2>
         <RecipeForm initialData={editingRecipe} onSave={handleSave}/>
       </section>
 
       <section>
-        <h2>Recetas</h2>
+        <h2>Recipe List</h2>
         {loading ? <p>Cargando...</p> : <RecipeList recipes={recipes} onEdit={handleEdit}/>}
       </section>
     </div>
