@@ -1,3 +1,4 @@
+'use client';
 import React, { useEffect, useState } from 'react';
 import { fetchRecipes, createRecipe, updateRecipe } from './api';
 import RecipeList from './components/RecipeList';
@@ -38,7 +39,7 @@ export default function App() {
   }
 
   async function handleSave(updated) {
-    if (updated.id) {
+    if (updated._id) {
       // update existing recipe
       updateRecipe(updated);
     } else {

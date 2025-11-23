@@ -19,6 +19,7 @@ const sample = [
     steps: ['Marinar el lomo', 'Cevichar el lomo','Servir con los vegetales', 'Acompañar con chips de batata, yuca, nachos o maíz cancha'],
     prepTime: '20 min',
     cookTime: '0',
+    temp: 'N/A',
     servings: 2,
     tags: ['peruano', 'mar y monte'],
     imageUrl: ''
@@ -36,6 +37,7 @@ const sample = [
     steps: ['Cocer pasta', 'Mezclar huevos, pimienta y queso', 'Saltear pasta con pancetta', 'Combinar todo con agua de la pasta'],
     prepTime: '10 min',
     cookTime: '10 min',
+    temp: 'N/A',
     servings: 2,
     tags: ['italiana', 'pasta'],
     imageUrl: ''

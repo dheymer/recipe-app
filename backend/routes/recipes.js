@@ -39,7 +39,7 @@ router.put("/:id", async (req, res) => {
   const { id } = req.params;
   const updatedRecipe = req.body;
 
-  const idx = recipes.findIndex((r) => r.id === id);
+  const idx = recipes.findIndex((r) => r._id === id);
   if (idx === -1) return res.status(404).json({ error: "Not found" });
 
   recipes[idx] = updatedRecipe;

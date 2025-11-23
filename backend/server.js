@@ -1,8 +1,10 @@
-require('dotenv').config();
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const recipesRouter = require('./routes/recipes');
+import dotenv from "dotenv";
+import express from "express";
+import mongoose from "mongoose";
+import cors from "cors";
+import recipesRouter from "./routes/recipes.js";
+
+dotenv.config();
 
 const app = express();
 app.use(cors());

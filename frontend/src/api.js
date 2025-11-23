@@ -17,7 +17,7 @@ export async function createRecipe(data) {
 }
 
 export async function updateRecipe(recipe) {
-  const res = await fetch(`${BASE}/recipes/${recipe.id}`, {
+  const res = await fetch(`${BASE}/recipes/${recipe._id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
